@@ -1,30 +1,25 @@
-package Entities;
+package entities;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.util.HashSet;
 import java.util.Observable;
 import java.util.Vector;
-
 import javax.swing.BorderFactory;
-import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 import javax.swing.border.Border;
-
-import UI.labels.CountryObsLabel;
+import ui.labels.CountryObsLabel;
 
 public class Country extends Observable{
 		private String countryName;
 		private Player owner;
 		private int countryId;
-		private Vector <Country> linkCountries = new Vector<Country>();
+		private Vector <Country> linked_countries = new Vector<Country>();
 		private int armyNum = 0;
-		private Continent belongTo;
+		private Continent continent;
 		private int x;
 		private int y;
-		private boolean owned;
-		private CountryObsLabel l;
-		private Border b; //Continent's border, constant throughout the game
+		private CountryObsLabel label;
+		private Border border; //Continent's border, constant throughout the game
 
 		public Country() {
 			this.countryName = "DNE";
@@ -32,10 +27,11 @@ public class Country extends Observable{
 		}
 	
 		/**
-		 * 
-		 * @param id
-		 * @param name
-		 * @param horizontal
+		 * Initialize Country Object given parameters of id, name, map attributes
+		 * Creates a corresponding CountryObsLabel to be fetched later 
+		 * @param id serialized Country id number created 
+		 * @param name assigned Country name 
+		 * @param horizontal TODO
 		 * @param vertical
 		 * @param imageX
 		 * @param imageY
@@ -47,17 +43,13 @@ public class Country extends Observable{
 			this.countryName = name;
 			this.x = horizontal;
 			this.y = vertical;
-			this.owned = false;
-			l = new CountryObsLabel(String.valueOf(armyNum));
-
-
-			l.setBounds((int)((float)plotX/imageX*x-10), (int)((float)plotY/imageY*y-10), 20, 20);
-			l.setFont(new Font("SimSun", Font.BOLD, 15));
-			l.setHorizontalAlignment(SwingConstants.CENTER);
-		}
-		
-		public void modifyLabel() {
-			
+			this.owner = new Player();
+			label = new CountryObsLabel(String.valueOf(armyNum));
+			x = (int)((float)plotX/imageX*x);
+			y = (int)((float)plotY/imageY*y);
+			label.setBounds(x-15, y-15, 30, 30);
+			label.setFont(new Font("SimSun", Font.BOLD, 15));
+			label.setHorizontalAlignment(SwingConstants.CENTER);
 		}
 		
 		/**
@@ -69,24 +61,14 @@ public class Country extends Observable{
 		}
 		
 		/**
-		 * Boolean of whether country's currently owned by a player
-		 * @return
-		 */
-		public boolean hasOwner() {
-			return owned;
-		}
-		
-		/**
 		 * Setter for owned player
 		 * Alerts observer to change color to that of the new player
 		 * @param p
 		 */
 		public void setOwner(Player p) {
-			owned = true;
-			owner = p;
-			
+			owner = p;	
 			if (armyNum==0) armyNum++;
-			l.setBackground(owner.getColor());
+			label.setBackground(owner.getColor());
 			alertObservers();
 
 		}
@@ -97,15 +79,20 @@ public class Country extends Observable{
 		 * @param nbour
 		 */
 		public void addNeighbour(Country nbour) {
-			for (Country c: this.linkCountries) {
+			for (Country c: this.linked_countries) {
 				if (c.getID() == nbour.getID())
 					return;
 			}
-			this.linkCountries.add(nbour);
+			this.linked_countries.add(nbour);
 		}
 		
+		/**
+		 * Determines if this Country has a neighbour with the ID of the argument String
+		 * @param countryId target neighbour's name
+		 * @return true if country is connected, false if not
+		 */
 		public boolean hasNeighbour (String countryId) {
-			for (Country c: this.linkCountries) {
+			for (Country c: this.linked_countries) {
 				if (c.getName().equals(countryId)) {
 					return true;
 				}
@@ -125,20 +112,12 @@ public class Country extends Observable{
 			visited.add(this.getName());
 			if(!this.getOwner().getID().equals(ownerId)) return false;
 			if(this.getName().equals(countryId)) return true;
-			for (Country c: this.linkCountries) {
+			for (Country c: this.linked_countries) {
 				if(visited.contains(c.getName())) continue;
 				if(c.hasPathTo(countryId,ownerId,visited)) return true;
 			}
 			return false;
 			
-		}
-		
-		/**
-		 * After change of state, alerts attached CountryObsLabel 
-		 */
-		public void alertObservers() {
-			setChanged();
-			notifyObservers(this);
 		}
 		
 		/**
@@ -170,14 +149,14 @@ public class Country extends Observable{
 		public boolean moveArmy(int toID, int armyNum) {
 			if (this.armyNum < armyNum+1) return false;
 			boolean neighBourExists = false;
-			for(Country c: this.linkCountries) {
+			for(Country c: this.linked_countries) {
 				if (c.getID() == toID) {
 					neighBourExists = true;
 				}
 			}
 			if(!neighBourExists) return false;
 			Country temp = new Country();
-			for (Country c: linkCountries) {
+			for (Country c: linked_countries) {
 				temp = c;
 				if (c.getID() == toID) break;
 			}
@@ -217,7 +196,7 @@ public class Country extends Observable{
 		 * @return Continent object
 		 */
 		public Continent getContinent() {
-			return this.belongTo;
+			return this.continent;
 		}
 		
 		/**
@@ -225,17 +204,17 @@ public class Country extends Observable{
 		 * @param c
 		 */
 		public void setContinent(Continent c) {
-			belongTo = c;
-			b = BorderFactory.createLineBorder(c.getColor(), 3);
-			l.setBorder(b);
+			continent = c;
+			border = BorderFactory.createLineBorder(c.getColor(), 3);
+			label.setBorder(border);
 		}
 		
 		/**
-		 * Getter of neigbouring Country Vector
+		 * Getter of surrounding Country Vector
 		 * @return
 		 */
 		public Vector<Country> getLinkCountries() {
-			return linkCountries;
+			return linked_countries;
 		}
 		
 		/**
@@ -243,16 +222,39 @@ public class Country extends Observable{
 		 * @return
 		 */
 		public CountryObsLabel getLabel() {
-			return l;
+			return label;
 		}
 		
+		/**
+		 * Print all neighbors' name
+		 */
 		public void printLinkedCountries() {
-			for(Country c:linkCountries) {
+			for(Country c:linked_countries) {
 				System.out.println(c.getName());
 			}
 		}
 		
+		/**
+		 * Print number of neighbors this Country has 
+		 */
 		public void printLinkedCountriesNum() {
-			System.out.println(linkCountries.size());
+			System.out.println(linked_countries.size());
+		}
+		
+		/**
+		 * 
+		 * @return array of coordinate
+		 */
+		public int[] getXY() {
+			int[] tmp = {x,y};
+			return tmp;
+		}
+		
+		/**
+		 * After change of state, alerts attached CountryObsLabel 
+		 */
+		public void alertObservers() {
+			setChanged();
+			notifyObservers(this);
 		}
 }

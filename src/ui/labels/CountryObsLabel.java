@@ -1,17 +1,14 @@
-package UI.labels;
+package ui.labels;
 
 import java.util.Observable;
 import java.util.Observer;
 
 import javax.swing.JLabel;
 
-import Entities.Country;
+import entities.Country;
 
 public class CountryObsLabel extends JLabel implements Observer{
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 
 	public CountryObsLabel(String valueOf) {
@@ -21,10 +18,8 @@ public class CountryObsLabel extends JLabel implements Observer{
 
 	@Override
 	public void update(Observable obs, Object x) {
+		this.setToolTipText("Name: "+((Country)obs).getName()+"  Owner: "+((Country)obs).getOwner().getID()+"  Army: "+String.valueOf(((Country)obs).getArmyNum()));
 		this.setBackground(((Country)obs).getOwner().getColor());
 		this.setText(String.valueOf(((Country)obs).getArmyNum()));
 	}
-	
-	
-
 }
