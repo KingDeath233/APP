@@ -2,6 +2,10 @@ package entities;
 
 import java.util.Vector;
 import javax.swing.JOptionPane;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Observable;
 import java.util.Random;
@@ -19,8 +23,18 @@ public class GamePlay extends Observable{
 	private int alert_type = 0;
 	private String outcome;
 	private String phase = "";
+	private Country attacker = null;
+	private Country defender = null;
+	private int att_dice=0;
+	private int def_dice=0;
 	
 	public GamePlay() {
+	}
+	
+	public void clearData() {
+		countries_list.clear();
+		player_list.clear();
+		continents_list.clear();
 	}
 	
 	/**
@@ -40,6 +54,7 @@ public class GamePlay extends Observable{
 			polledCountries.add(cInd);
 			
 			countries_list.get(cInd).setOwner(player_list.get(pInd)); //set unassigned Country to Player in List in order
+			countries_list.get(cInd).addArmy(1);
 			player_list.get(pInd).increaseCountry();
 			player_list.get(pInd).deployArmy(1);
 			pInd++;
@@ -54,6 +69,8 @@ public class GamePlay extends Observable{
 		}
 		phaseZero();
 	}
+	
+	
 	
 	/**
      * Startup Phase
@@ -108,27 +125,11 @@ public class GamePlay extends Observable{
         player_index = 0;
         player.rewardInitialArmy();
         outcome = "Randomly assigned armies to owned countries";
-        phaseOne();
+        phaseRecruit();
         alertObservers(2);   	
     }
     
-	/**
-	 * Switches context to next player in chronological order
-	 * Initiate reinforcement phase for that player
-	 */
-	public void nextPlayer() {
-		player_index++;
-		if(player_index % player_list.size()==0) {
-			player_index = 0;
-		}
-		player = player_list.get(player_index);
-		player.rewardInitialArmy();
-		army_to_place = player.getArmyToPlace();
-		outcome += "\tNext player's turn";
-		alertObservers(2);
-		
-		phaseOne();
-	}
+	
 	
 	/**
 	 * For next player to place army during Startup Phase
@@ -146,12 +147,29 @@ public class GamePlay extends Observable{
 		alertObservers(2);
 		if(army_to_place==0) {
 			player.rewardInitialArmy();
-			phaseOne();
+			phaseRecruit();
 		}
 	}
 	
+	
+	
 	/**
-     * From player command: recruit country number
+     * Reinforcement Phase
+     * Set phase to "Fortification Phase"
+     * Alerts InfoObsLabel
+     */
+	private void phaseRecruit() {
+		JOptionPane.showMessageDialog(null, "Reinforcement Phase for player "+player.getID(), "Information", JOptionPane.INFORMATION_MESSAGE);
+		if(player.getOwnCard().size()==5) {
+			JOptionPane.showMessageDialog(null, "You have reached the maximum number of cards, please trade!", "Information", JOptionPane.INFORMATION_MESSAGE);
+		}
+		phase = "Reinforcement Phase";
+		army_to_place = player.getArmyToPlace();
+		alertObservers(1);
+	}
+	
+	/**
+     * From player command: reinforce country number
      * During reinforcement phase, player assigns the input amount of army to target country 
      * @param c target countryId
      * @param num amount of army to assign
@@ -163,30 +181,96 @@ public class GamePlay extends Observable{
 		outcome = "Reinforced "+c.getName()+" with "+num+" armies";
 		alertObservers(1);
 		if(army_to_place==0) {
-			phaseTwo();
+			phaseAttack();
 		}
 	}
 	
 	/**
-     * Reinforcement Phase
-     * Set phase to "Fortification Phase"
-     * Alerts InfoObsLabel
-     */
-	private void phaseOne() {
-		JOptionPane.showMessageDialog(null, "Reinforcement Phase for player "+player.getID(), "Information", JOptionPane.INFORMATION_MESSAGE);
-		phase = "Reinforcement Phase";
-		army_to_place = player.getArmyToPlace();
-		alertObservers(1);
+	 * Check if a player has at least one country able to attack
+	 * 1. Country belongs to the player
+	 * 2. Country has at least 2 armies
+	 * 3. Country has at least 1 enemy neighbor
+	 * @param p Player to test if can attack
+	 * @return true if can false if not
+	 */
+	public boolean checkIfCanAttack(Player p) {
+		for (Country c:countries_list) {
+			if (!c.getOwner().getID().equals(p.getID()) || c.getArmyNum()<2 || !c.hasEnemyNeighbour()) continue;
+			return true;
+		}
+		return false;
 	}
 	
     /**
      * Attack Phase
+     * If player is able to attack with at least one of its countries, continue the attack phase
+     * Else go directly into fortify phase
      */
-	private void phaseTwo() {
+	private void phaseAttack() {
 		JOptionPane.showMessageDialog(null, "Attack Phase for player "+player.getID(), "Information", JOptionPane.INFORMATION_MESSAGE);
-		phase = "Attack Phase";
-		JOptionPane.showMessageDialog(null, "Attack Phase is now under construction!", "Warning", JOptionPane.ERROR_MESSAGE);
-		phaseThree();
+		if(checkIfCanAttack(player)) {
+			phase = "Attack Phase 1";
+			alertObservers(1);
+		}else {
+			phaseFortify();
+		}
+		
+	}
+	
+	public void setAttack(Country from, Country to, int dicenum) {
+		attacker = from;
+		defender = to;
+		att_dice = dicenum;
+		phase = "Attack Phase 2";
+		alertObservers(1);
+	}
+	
+	public void commenceAttack(int defenderDice) {
+		def_dice = defenderDice;
+		attackRound();
+	}
+	
+	private void attackRound() {
+		Vector<Integer> adice = new Vector<>();
+		Vector<Integer> ddice = new Vector<>();
+		Random rand = new Random();
+		for (int i=0;i<att_dice;i++) {
+			adice.add(rand.nextInt(6)+1);
+		}
+		for (int i=0;i<att_dice;i++) {
+			adice.add(rand.nextInt(6)+1);
+		}
+		Comparator comparator = Collections.reverseOrder();
+		Collections.sort(adice,comparator);
+		Collections.sort(ddice,comparator);
+		outcome = "Player "+attacker.getOwner().getID()+" rolled "
+		+ adice.toString() + " , Player "+defender.getOwner().getID() + " rolled " + ddice.toString()+"\n"; 
+		
+		int alose = 0, dlose = 0;
+		while (adice.size()!=0 && ddice.size()!=0) {
+			if(adice.remove(0) > ddice.remove(0)) {
+				defender.removeArmy(1);
+				dlose++;
+			}
+			else {
+				attacker.removeArmy(1);
+				alose++;
+			}
+		}
+		outcome += "Attacker lost "+alose+ " , Defender lose "+dlose;
+		
+		
+		alertObservers(1);
+		
+		
+		
+	}
+	
+	
+	
+	
+	public Country getDefender() {
+		return this.defender;
 	}
 	
     /**
@@ -194,7 +278,7 @@ public class GamePlay extends Observable{
      * Set phase to "Fortification Phase"
      * alerts InfoObsLabel
      */
-	private void phaseThree() {
+	private void phaseFortify() {
 		JOptionPane.showMessageDialog(null, "Fortification Phase for player "+player.getID(), "Information", JOptionPane.INFORMATION_MESSAGE);
 		phase = "Fortification Phase";
 		alertObservers(1);
@@ -215,12 +299,41 @@ public class GamePlay extends Observable{
 		
 	}
 	
+	/**
+	 * Switches context to next player in chronological order
+	 * Initiate reinforcement phase for that player
+	 */
+	public void nextPlayer() {
+		player_index++;
+		if(player_index % player_list.size()==0) {
+			player_index = 0;
+		}
+		player = player_list.get(player_index);
+		player.rewardInitialArmy();
+		army_to_place = player.getArmyToPlace();
+		outcome += "\tNext player's turn";
+		alertObservers(2);
+		
+		phaseRecruit();
+	}
+	
     /**
      * Getter for phase attribute
      * @return phase as String
      */
     public String getPhase() {
         return this.phase;
+    }
+    
+    public void setPhase(String s) {
+    	switch (s) {
+    		case "0": phase = "Startup Phase";return;
+    		case "1": phase = "Reinforcement Phase";return;
+    		case "2": phase = "Attack Phase 1";return;
+    		case "3": phase = "Attack Phase 2";return;
+    		case "4": phase = "Attack Phase 3";return;
+    		case "5": phase = "Fortification Phase";return;
+    	}
     }
     
     /**
@@ -319,11 +432,20 @@ public class GamePlay extends Observable{
 	public void alertObservers(int x) {
 		this.player = player_list.get(player_index);
 		this.army_to_place = player.getArmyToPlace();
+
 		alert_type = x;
 		setChanged();
 		notifyObservers(this);
 		outcome = "";
 		alert_type = 0;
+	}
+	
+	public void cheatAddCard() {
+		String tmp[] = {"Infantry","Cavalry","Artillery"};
+		int r = (int)(Math.random()*3);
+		player.addCard(tmp[r]);
+		outcome = "add one random card to current player (cheat)";
+		alertObservers(2);
 	}
 	
 	/**
@@ -332,5 +454,9 @@ public class GamePlay extends Observable{
 	 */
 	public int getPlayerIndex() {
 		return this.player_index;
+	}
+	
+	public void setPlayerIndex(int i) {
+		this.player_index = i;
 	}
 }
