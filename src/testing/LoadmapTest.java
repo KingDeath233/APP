@@ -195,7 +195,7 @@ public class LoadmapTest {
 	
 	@Test
 	public void hasPathTo() {
-		Player p = new Player ("a", getColor("blue"));
+		Player p = new Player ("a", getColor("blue"), null);
 		HashSet<String> visited = new HashSet<>();
 		countriesList.get(0).setOwner(p);
 		countriesList.get(2).setOwner(p);
@@ -207,7 +207,7 @@ public class LoadmapTest {
 	
 	@Test 
 	public void noPathTo() {
-		Player p = new Player ("a",getColor("blue"));
+		Player p = new Player ("a",getColor("blue"), null);
 		HashSet<String> visited = new HashSet<>();
 		countriesList.get(0).setOwner(p);
 		countriesList.get(7).setOwner(p);
@@ -231,8 +231,8 @@ public class LoadmapTest {
 	
 	@Test
 	public void observerChange() {
-		Player a = new Player ("a",getColor("blue"));
-		Player b = new Player ("b",getColor("green"));
+		Player a = new Player ("a",getColor("blue"), null);
+		Player b = new Player ("b",getColor("green"), null);
 		Country c = countriesList.get(0);
 		c.setOwner(a);
 		assertEquals(a.getColor(),c.getLabel().getBackground());

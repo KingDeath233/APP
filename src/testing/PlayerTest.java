@@ -12,7 +12,7 @@ import entities.Player;
 
 public class PlayerTest {
 	
-	Player pla = new Player("Jaden",getColor("red"));
+	Player pla = new Player("Jaden",getColor("red"), null);
 	int totalCountryNum = 9;
 	
 	Continent con = new Continent(1, "Asian", 5, null);

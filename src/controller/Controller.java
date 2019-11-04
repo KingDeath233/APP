@@ -64,7 +64,7 @@ public class Controller {
 	public void addPlayers(Vector<String[]> list) {
 		Vector<Player> player_list = new Vector<>();
 		for(String [] s: list) {
-			player_list.add(new Player(s[0],getColor(s[1])));
+			player_list.add(new Player(s[0],getColor(s[1]), this.game));
 		}
 		game.setPlayers(player_list);
 	}
@@ -273,7 +273,7 @@ public class Controller {
 			line = br.readLine();
 			while(!line.trim().isEmpty()) {
 				String[] split = line.split("\\s+");
-				Player p = new Player(split[0],new Color(Integer.parseInt(split[2]),true));
+				Player p = new Player(split[0],new Color(Integer.parseInt(split[2]),true), this.game);
 				players.add(p);
 				p.increaseCountry(Integer.parseInt(split[1]));
 				for (int i=0;i<split[3].length();i++) {
@@ -431,8 +431,7 @@ public class Controller {
 		}
 		//Command reinforce countryid num
 		else if(splitted[0].equals("reinforce")) {
-			if(game.getPhase().equals("Reinforcement Phase")) {
-			
+			if(game.getPhase().equals("Reinforcement Phase")) {		
 				String countryId = splitted[1];
 				int num = Integer.parseInt(splitted[2]);
 				boolean c_exists = false;
