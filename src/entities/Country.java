@@ -161,6 +161,22 @@ public class Country extends Observable{
 		}
 		
 		/**
+		 * Depth-first recursive get all the countries which has path to the given country
+		 * @param countryID
+		 * @param ownerId
+		 * @param visited
+		 * @return
+		 */
+		public HashSet<Country> getLinkCountries(String countryId, String ownerId, HashSet<Country>visited){
+			visited.add(this);
+			for (Country c: this.neighbor_countries) {
+				if(visited.contains(c) || !c.getOwner().getID().equals(ownerId)) continue;
+				visited = c.getLinkCountries(countryId, ownerId, visited);
+			}
+			return visited;
+		}
+		
+		/**
 		 * Add a certain army count to this country
 		 * @param amount Amount of army to be added as int
 		 */

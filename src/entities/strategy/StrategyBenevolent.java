@@ -1,6 +1,7 @@
 package entities.strategy;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Vector;
 
 import entities.Country;
@@ -64,11 +65,30 @@ public class StrategyBenevolent extends Strategy{
 	
 	@Override
 	public void fortify() {
-		//TODO yechao you do it
-		
-		
-		
-		
-		game.nextPlayer();
+		if(game.checkIfCanFortify(player)) {
+			Collections.sort(ownedCountries,new CountryComparator());
+			int curr = 0;
+			while(curr<ownedCountries.size()) {
+			HashSet<Country> visited = new HashSet<Country>();
+			visited = ownedCountries.get(curr).getLinkCountries(ownedCountries.get(0).getName(), ownedCountries.get(0).getOwner().getID(), visited);
+			curr++;
+				Vector<Country> tmpC = new Vector<Country>();
+				for(Country c:visited) {
+					tmpC.add(c);
+				}
+				Collections.sort(tmpC,new CountryComparator());
+				int avg = (tmpC.get(tmpC.size()-1).getArmyNum()+tmpC.get(0).getArmyNum())/2;
+				if(tmpC.get(tmpC.size()-1).getArmyNum()-avg<=0) {
+					continue;
+				}
+				else {
+					game.fortify(tmpC.get(tmpC.size()-1), tmpC.get(0), tmpC.get(tmpC.size()-1).getArmyNum()-avg);
+					break;
+				}
+			}
+		}
+		else {
+			game.nextPlayer();
+		}
 	}
 }
