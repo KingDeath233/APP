@@ -10,6 +10,13 @@ import org.junit.Test;
 import entities.Continent;
 import entities.Player;
 
+/**
+ * @author Boxiao Yu 40070128
+ * @author Yilun Sun 40092802
+ * @author Yuhua Jiang 40083453
+ * @author Jiuxiang Chen 40086723
+ * @author Chao Ye 40055665
+ */
 public class PlayerTest {
 	
 	Player pla = new Player("Jaden",getColor("red"), null);

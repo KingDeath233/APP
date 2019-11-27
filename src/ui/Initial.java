@@ -23,14 +23,20 @@ import javax.swing.JScrollPane;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
-
+/**
+ * @author Boxiao Yu 40070128
+ * @author Yilun Sun 40092802
+ * @author Yuhua Jiang 40083453
+ * @author Jiuxiang Chen 40086723
+ * @author Chao Ye 40055665
+ */
 public class Initial extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	Vector<String[]> player_str_list = new Vector<>();
 	private Vector<String> colorList = new Vector<String>();
-	private String isCommandPattern = "(gameplayer -(add|remove) \\w*|loadmap \\w*\\.map|populatecountries)";
+	String isCommandPattern = "(gameplayer -(add|remove) \\w*( (aggressive|benevolent|random|cheater))?|loadmap \\w*\\.map|populatecountries)";
 	GamePlay game;
 	Controller control;
 	
@@ -84,10 +90,12 @@ public class Initial extends JFrame {
 				}
 			}
 			else if(command[0].equals("gameplayer")) {
+				
 					input_text.setText(command[1]);
 				
 				String type = command[1];
 				String name = command[2];
+				// gameplayer -add playername strategy -remove playername
 				if(type.equals("-add")) {
 					if(player_str_list.size()>=8) {
 						JOptionPane.showMessageDialog(null, "Too many players!", "Warning", JOptionPane.ERROR_MESSAGE);
@@ -103,9 +111,15 @@ public class Initial extends JFrame {
 						}
 	
 						String c = getRandColor();
-						player_str_list.add(new String[] {name,c});
+						//If there's a designated strategy (to create ai)
+						if(command.length > 3) {
+							String strategy = command[3];
+							player_str_list.add(new String[] {name,c,strategy.substring(0,1)});
+						}else {
+							player_str_list.add(new String[] {name,c});
+						}
 						input_text.setText("");
-						output_text.append("Successfully add player "+name+"\n");
+						output_text.append("Successfully added player "+name+"\n");
 					}
 				}
 				else if(type.equals("-remove")) {
@@ -153,7 +167,7 @@ public class Initial extends JFrame {
 			}
 			player_text.setText("");
 			for(String [] s:player_str_list) {
-				player_text.append("Name: "+s[0]+"    Color: "+s[1]+"\n");
+				player_text.append("Name: "+s[0]+" Color: "+s[1]+"   "+ (s.length==3?"AI: "+s[2]:"") +"\n");
 			}
 		}
 		else {

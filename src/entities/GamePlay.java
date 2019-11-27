@@ -23,6 +23,11 @@ import java.util.Random;
  * public methods within GamePlay is called by the controller while processing user inputs from the UI during game play
  * Attributes can only be accessed by getters and setters from the controller
  * handles change of game data and state and reflects to relevant observers
+ * @author Boxiao Yu 40070128
+ * @author Yilun Sun 40092802
+ * @author Yuhua Jiang 40083453
+ * @author Jiuxiang Chen 40086723
+ * @author Chao Ye 40055665
  */
 public class GamePlay extends Observable{
 	private Vector <Continent> continents_list;
@@ -41,6 +46,7 @@ public class GamePlay extends Observable{
 	private int add_flag = 0;
 	private JFrame mapui = null;
 	boolean is_test = false;
+	public boolean game_ended = false;
 	
 	/**
 	 * Empty default ctor
@@ -83,7 +89,7 @@ public class GamePlay extends Observable{
 			
 			countries_list.get(cInd).setOwner(player_list.get(pInd)); //set unassigned Country to Player in List in order
 			countries_list.get(cInd).addArmy(1);
-			player_list.get(pInd).increaseCountry();
+			player_list.get(pInd).addCountry(countries_list.get(cInd));
 			player_list.get(pInd).deployArmy(1);
 			pInd++;
 			if (pInd % player_list.size() == 0) {
@@ -95,6 +101,12 @@ public class GamePlay extends Observable{
 		for(int i = 0;i<continents_list.size();i++) {
 			continents_list.get(i).checkIfConquered();
 		}
+		for (Player p: player_list) {
+			if(p.isAI()) {
+				p.setOwnCountriesInStrategy();
+			}
+		}
+		
 		phaseZero();
 	}
 	
@@ -119,6 +131,7 @@ public class GamePlay extends Observable{
      * @param c Country to play an army
 	 */
 	public void placeArmy(Country c) {
+		outcome+= "Player "+player.getID()+" placed army on "+c.getName()+"\n";
 		c.addArmy(1);
 		player.deployArmy(1);
 		startUpNext();
@@ -169,34 +182,48 @@ public class GamePlay extends Observable{
 		}
 		player = player_list.get(player_index);
 		army_to_place = player.getArmyToPlace();
-		outcome += "Next player's turn";
-		alertObservers();
+		outcome += "Next player's turn\n";
 		if(army_to_place==0) {
 			player.rewardInitialArmy();
-			player.phaseRecruit();
+			phaseRecruit();
 		}
+		alertObservers();
+
+		if(player.isAI()) {
+			System.out.println("player "+player.getID()+" is placing random army");
+			//if the player is an ai, randomly placearmy on one of its owned Countries, go to the next player's startup phase
+			Random rand = new Random();
+			placeArmy(player.getOwnCountries().get(rand.nextInt(player.getTotalCountriesNumber())));
+		}
+
 	}
 	
 	
 	
 	/**
      * Reinforcement Phase
-     * Set phase to "Fortification Phase"
+     * Set phase to "Reinforcement Phase"
      * Alerts InfoObsLabel
      */
 	public void phaseRecruit() {
 		showDialog("Reinforcement Phase for player "+player.getID());
 		add_flag = 0;
+		//TODO add AI automatic trade
 		if(player.getOwnCard().size()==5) {
 			showDialog("You have reached the maximum number of cards, please trade!");
 			Trade t = new Trade(this);
 			t.setVisible(true);
 		}
+		// System.out.println("It is now player "+player.getID()+"'s turn, ai: "+player.isAI());
 		phase = "Reinforcement Phase";
 		player.reSetArmy();
 		player.rewardInitialArmy();
 		army_to_place = player.getArmyToPlace();
+		if(player.isAI()) {
+			player.doStrategy();
+		}
 		alertObservers();
+
 	}
 	
 	/**
@@ -208,10 +235,10 @@ public class GamePlay extends Observable{
 	public void reinforceArmy (Country c, int num) {
 		c.addArmy(num);
 		player.deployArmy(num);
-		outcome = "Reinforced "+c.getName()+" with "+num+" armies";
+		outcome += "Player "+player.getID()+ " Reinforced "+c.getName()+" with "+num+" armies\n";
 		alertObservers();
 		if(army_to_place==0) {
-			player.phaseAttack();
+			phaseAttack();
 		}
 	}
 	
@@ -225,8 +252,7 @@ public class GamePlay extends Observable{
 	 */
 	public boolean checkIfCanAttack(Player p) {
 		for (Country c:countries_list) {
-			if (!c.getOwner().getID().equals(p.getID()) || c.getArmyNum()<2 || !c.hasEnemyNeighbour()) continue;
-			return true;
+			if(c.getOwner().getID().equals(p.getID()) && c.getArmyNum()>=2 && c.hasEnemyNeighbour()) return true;
 		}
 		return false;
 	}
@@ -242,7 +268,7 @@ public class GamePlay extends Observable{
 			phase = "Attack Phase 1";
 			alertObservers();
 		}else {
-			player.phaseFortify();
+			phaseFortify();
 		}
 		
 	}
@@ -253,7 +279,8 @@ public class GamePlay extends Observable{
 	 * Goes directly into Fortification Phase
 	 */
 	public void noAttack() {
-		player.phaseFortify();
+		outcome += "Player "+player.getID()+" chose not to attack";
+		phaseFortify();
 	}
 	
 	/**
@@ -267,9 +294,13 @@ public class GamePlay extends Observable{
 		attacker = from;
 		defender = to;
 		att_dice = dicenum;
-		phase = "Attack Phase 2";
 		outcome += "Attacking from "+from.getName()+" to "+to.getName()+" \nChoose defender's number of dice to be rolled\n";
-		player = defender.getOwner();
+		if(defender.getOwner().isAI()){
+			player = defender.getOwner();
+			phase = "Attack Phase 2";
+		}else {
+			commenceAttack(Math.min(2, defender.getArmyNum()));
+		}
 		alertObservers();
 	}
 	
@@ -282,6 +313,7 @@ public class GamePlay extends Observable{
 	 * @return true if the Country is successfully conquered during the all out attack
 	 */
 	public boolean allOutAttack (Country from, Country to) {
+		outcome += "All-out Attacking from "+from.getName()+" ("+from.getArmyNum()+") to "+ to.getName()+"\n";
 		attacker = from;
 		defender = to;
 		boolean conquered = false;
@@ -298,7 +330,9 @@ public class GamePlay extends Observable{
 				alertObservers();
 			}
 			else {
-				player.phaseFortify();
+				if(!player.isAI()) {
+					phaseFortify();
+				}
 			}
 		}
 		return conquered;
@@ -312,6 +346,7 @@ public class GamePlay extends Observable{
 	public boolean commenceAttack(int defenderDice) {
 		def_dice = defenderDice;
 		player = attacker.getOwner();
+		outcome+= "defender chose "+defenderDice+" dice\n";
 		return attackRound(false);
 	}
 	
@@ -325,7 +360,7 @@ public class GamePlay extends Observable{
 	 * When one side loses a comparison, 1 army number is subtracted from the losing side's country
 	 * Set game phase back to attack phase 1 after the attack is performed and the defender still has armies
 	 * Set game phase to attack phase 3 if the defender loses all armies after the attack
-	 * @param allout If the call comes from an all out attack
+	 * @param allout If the call comes from an all out attack, used to determine if observer should be alerted
 	 * @return true if the defender no longer has any more armies to defend the attack
 	 */
 	private boolean attackRound(boolean allout) {
@@ -374,7 +409,7 @@ public class GamePlay extends Observable{
 			}
 			else {
 				outcome += "No more countries is able to attack";
-				player.phaseFortify();
+				phaseFortify();
 			}
 			alertObservers();
 		}
@@ -415,28 +450,27 @@ public class GamePlay extends Observable{
 	 * Moves phase to attack phase 1 or fortification depending on if the current player still can perform an attack
 	 * @param number Number of army to move
 	 */
-	public void moveArmyTo(int number) {
+	public void attackMove(int number) {
 		attacker.removeArmy(number);
 		defender.addArmy(number);
-		outcome = "Moved "+number+" to "+defender.getName()+"\n";
+		outcome += "Moved "+number+" to "+defender.getName()+"\n";
 		phase = "Attack Phase 1";
-		attacker.getOwner().increaseCountry();
-		defender.getOwner().decreaseCountry();
+		attacker.getOwner().addCountry(defender);
+		defender.getOwner().removeCountry(defender);
 		defender.getOwner().getOwnContinent().remove(defender.getContinent());
 		if(defender.getOwner().getTotalCountriesNumber()==0) {
-			player_list.remove(defender.getOwner());
-			showDialog("Player "+defender.getOwner().getID()+" is out!");
-			if(player_index>=player_list.size()) {
-				player_index--;
-			}
+			removePlayer(defender.getOwner());
 		}
 		if (checkIfCanAttack(player)) {
 			phase = "Attack Phase 1";
 			outcome += "Continue Attacking.\n";
 		}
 		else {
-			player.phaseFortify();
+			if(!player.isAI()) {
+				phaseFortify();
+			}
 		}
+		reSetOwner();
 		alertObservers();
 	}
 	
@@ -446,11 +480,19 @@ public class GamePlay extends Observable{
 	public void reSetOwner() {
 		defender.setOwner(player);
 		defender.getContinent().checkIfConquered();
-		if(defender.getOwner().checkWin(continents_list.size())) {
-			showDialog("Player "+attacker.getOwner().getID()+", you win!");
-			mapui.dispose();
-			Menu m = new Menu();
-			m.setVisible(true);
+		checkWin();
+	}
+	
+	public void checkWin() {
+		if(player.checkWin(continents_list.size())) {
+			game_ended = true;
+			showDialog("Player "+player.getID()+", you win!");
+			if(!is_test) {
+				
+				mapui.dispose();
+				Menu m = new Menu();
+				m.setVisible(true);
+			}
 		}
 	}
 	
@@ -497,7 +539,7 @@ public class GamePlay extends Observable{
 	public void fortify(Country from, Country to, int num) {
 		from.removeArmy(num);
 		to.addArmy(num);
-		outcome = "Sucessfully mobilized from "+ from.getName()+" to "+to.getName()+" "+num+" armies";
+		outcome += "Sucessfully mobilized from "+ from.getName()+" to "+to.getName()+" "+num+" armies\n";
 		nextPlayer();
 		
 	}
@@ -511,9 +553,9 @@ public class GamePlay extends Observable{
 		player = player_list.get(player_index);
 		player.rewardInitialArmy();
 		army_to_place = player.getArmyToPlace();
-		outcome += "\tNext player's turn";
+		outcome += "Next player's turn\n";
 		alertObservers();
-		player.phaseRecruit();
+		phaseRecruit();
 	}
 	
     /**
@@ -553,6 +595,18 @@ public class GamePlay extends Observable{
      */
     public Player getPlayer() {
         return player;
+    }
+    
+    /**
+     * Getter for player with specific input id
+     * @param id ID name of player
+     * @return Specified Player object
+     */
+    public Player getPlayer(String id) {
+    	for (Player p: player_list) {
+    		if(p.getID().equals(id)) return p;
+    	}
+    	return null;
     }
     
     /**
@@ -636,7 +690,9 @@ public class GamePlay extends Observable{
 
 		setChanged();
 		notifyObservers(this);
-		outcome = "";
+		if(!player.isAI()) {
+			outcome = "";
+		}
 		alert_type = 0;
 	}
 	
@@ -660,6 +716,14 @@ public class GamePlay extends Observable{
 	 */
 	public int getPlayerIndex() {
 		return player_index;
+	}
+	
+	/**
+	 * Getter of player owned country number
+	 * @return String value of total number of countries owned by current player
+	 */
+	public String getPlayerCountryNum() {
+		return String.valueOf(this.player.getTotalCountriesNumber());
 	}
 	
 	/**
@@ -704,13 +768,23 @@ public class GamePlay extends Observable{
 		is_test = true;
 	}
 	
+	public void removePlayer(Player p) {
+		player_list.remove(defender.getOwner());
+		if(!is_test) {
+			JOptionPane.showMessageDialog(null, "Player "+defender.getOwner().getID()+" is out!", "Information", JOptionPane.INFORMATION_MESSAGE);
+		}
+		if(player_index>=player_list.size()) {
+			player_index--;
+		}
+	}
+	
 	/**
 	 * Prompts a message dialogue showing an important message in game
 	 * Will only show the dialogue if the game is not a test being run in JUnit
 	 * @param s Message to be shown in the Message Dialogue
 	 */
 	private void showDialog(String s) {
-		if(!is_test) {
+		if(!is_test && (!player.isAI()||game_ended)) {
 			JOptionPane.showMessageDialog(null, s, "Information", JOptionPane.INFORMATION_MESSAGE);
 		}
 	}

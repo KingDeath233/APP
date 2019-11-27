@@ -29,12 +29,18 @@ import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JMenuBar;
 import java.awt.Font;
-
+/**
+ * @author Boxiao Yu 40070128
+ * @author Yilun Sun 40092802
+ * @author Yuhua Jiang 40083453
+ * @author Jiuxiang Chen 40086723
+ * @author Chao Ye 40055665
+ */
 public class MapUI extends JFrame {
 	
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
-	private JTextField textField;
+	public JTextField textField;
 	private String isCommandPattern = "(placearmy \\w*(\\-\\w+)*|placeall|"
 			+ "reinforce \\w*(\\-\\w+)* [1-9][0-9]*|"
 			+ "fortify (\\w*(\\-\\w+)* \\w*(\\-\\w+)* [1-9][0-9]*|\\-none))|"
@@ -85,7 +91,7 @@ public class MapUI extends JFrame {
 			g2.setStroke(stroke);
 			for(Country c:countries_list) {
 				int[] from = c.getXY();
-				for(Country linkc:c.getLinkCountries()) {
+				for(Country linkc:c.getNeighbors()) {
 					int[] to = linkc.getXY();
 					if(Math.abs(from[0]-to[0])>600) {
 						int[] tmpXL;

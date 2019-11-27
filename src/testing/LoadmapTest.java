@@ -17,6 +17,13 @@ import entities.Continent;
 import entities.Country;
 import entities.Player;
 
+/**
+ * @author Boxiao Yu 40070128
+ * @author Yilun Sun 40092802
+ * @author Yuhua Jiang 40083453
+ * @author Jiuxiang Chen 40086723
+ * @author Chao Ye 40055665
+ */
 public class LoadmapTest {
 	
 	private Vector<Continent> continentsList = new Vector<Continent>();
@@ -141,7 +148,7 @@ public class LoadmapTest {
 	public void visit (Country curr,HashSet<String> visited) {
 		if(visited.contains(curr.getName())) return;
 		visited.add(curr.getName());
-		for(Country c: curr.getLinkCountries()) {
+		for(Country c: curr.getNeighbors()) {
 			visit(c,visited);
 		}
 	}
@@ -149,7 +156,7 @@ public class LoadmapTest {
 	public void visitInContinent(Country curr,HashSet<String> visited) {
 		if(visited.contains(curr.getName())) return;
 		visited.add(curr.getName());
-		for (Country c: curr.getLinkCountries()) {
+		for (Country c: curr.getNeighbors()) {
 			if(c.getContinent().getName().equals(curr.getContinent().getName())) {
 				visitInContinent(c,visited);
 			}	
@@ -189,8 +196,8 @@ public class LoadmapTest {
 	
 	@Test
 	public void setNeighbours() {
-		assertEquals(3, countriesList.get(0).getLinkCountries().size());
-		assertEquals("North-West-Territory",countriesList.get(0).getLinkCountries().get(0).getName());
+		assertEquals(3, countriesList.get(0).getNeighbors().size());
+		assertEquals("North-West-Territory",countriesList.get(0).getNeighbors().get(0).getName());
 	}
 	
 	@Test
