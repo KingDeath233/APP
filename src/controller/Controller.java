@@ -63,6 +63,18 @@ public class Controller {
 	}
 	
 	/**
+	 * Called by Tournament object in tournament mode
+	 * Assign result String vector in the gameplay to the parsed result string vector in tournament object
+	 * to append name of the winner at the end of the game
+	 * Start the gameplayer by randomly populating the countries for the game model
+	 * @param result
+	 */
+	public void startGame(Vector<String> result) {
+		game.parseResultArray(result);
+		game.populateCountries();
+	}
+	
+	/**
 	 * Convert string type of player list into actual object type of player list
 	 * @param list list of all player
 	 */
@@ -70,7 +82,6 @@ public class Controller {
 		Vector<Player> player_list = new Vector<>();
 		for(String [] s: list) {
 			if(s.length >2) {
-				System.out.println("ai player with strategy "+s[2]+" in control");
 				player_list.add(new Player(s[0],getColor(s[1]), this.game, s[2]));
 			}else {
 				player_list.add(new Player(s[0],getColor(s[1]), this.game));
@@ -416,9 +427,11 @@ public class Controller {
 	 */
 	public String [] processInput(String input) {
 		String [] splitted = input.split("\\s+");
-		
+		if(input.equals("donothing")) {
+			game.nextPlayer();
+		}
 		// Command placeall
-		if(splitted[0].equals("placeall")) {
+		else if(splitted[0].equals("placeall")) {
 	        if(game.getPhase().equals("Startup Phase")) {
 	            //place all armies randomly for current player
 	            game.placeAll();

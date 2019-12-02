@@ -29,6 +29,7 @@ public class Country extends Observable{
 		private int y;
 		private CountryObsLabel label;
 		private Border border; //Continent's border, constant throughout the game
+		private boolean is_tournament = false;
 
 		/**
 		 * Empty constructor for country
@@ -38,6 +39,10 @@ public class Country extends Observable{
 		public Country() {
 			this.countryName = "DNE";
 			this.owner = new Player();
+		}
+		
+		public void isTournament() {
+			is_tournament = true;
 		}
 	
 
@@ -62,7 +67,7 @@ public class Country extends Observable{
 			label = new CountryObsLabel(String.valueOf(armyNum),name);
 			x = (int)((float)plotX/imageX*x);
 			y = (int)((float)plotY/imageY*y);
-			label.setBounds(x-15, y-15, 30, 30);
+			label.setBounds(x-17, y-17, 34, 34);
 			label.setFont(new Font("SimSun", Font.BOLD, 15));
 			label.setHorizontalAlignment(SwingConstants.CENTER);
 			this.addObserver(label);
@@ -314,7 +319,9 @@ public class Country extends Observable{
 		 * After change of state, alerts attached CountryObsLabel 
 		 */
 		public void alertObservers() {
-			setChanged();
-			notifyObservers(this);
+			if(!is_tournament) {
+				setChanged();
+				notifyObservers(this);
+			}
 		}
 }
