@@ -1,6 +1,9 @@
 package entities.strategy;
 import java.util.HashSet;
 import java.util.Vector;
+
+import javax.swing.JOptionPane;
+
 import entities.Continent;
 import entities.Country;
 import entities.GamePlay;
@@ -22,20 +25,25 @@ import entities.Player;
 
 public class StrategyCheater extends Strategy {
 	
+	String outcome;
+	
 	public StrategyCheater(GamePlay game, Player p) {
 		this.game = game;
 		this.player = p;		
 		this.type = "c";
-
+		this.outcome = new String();
 	}
 	
 	@Override
 	//doubles the armies on all its countries
 	public void reinforce() {
+		outcome+= "Reinforcement doubled army on \n";
+
 		for(int i = 0; i < ownedCountries.size(); i++) {
 			Country c = ownedCountries.get(i);
 			int temp = c.getArmyNum();
 			c.addArmy(temp);
+			outcome += c.getName()+(i==ownedCountries.size()-1?"\n":",");
 		}
 		
 	}
@@ -63,33 +71,46 @@ public class StrategyCheater extends Strategy {
 				}
 			}
 		}
-		
+		outcome+="Attacks Conquered :\n";
 		for(Country c: game.getCountries()) {
 			if(visited.contains(c.getName())) {
+				c.setArmy(1);
+				player.addCountry(c);
 				c.getOwner().removeCountry(c);
-				c.getOwner().getOwnContinent().remove(c.getContinent());	
+				c.getOwner().getOwnContinent().remove(c.getContinent());
 				if(c.getOwner().getTotalCountriesNumber()==0) {
-					game.removePlayer(c.getOwner());
+					game.getPlayerList().remove(c.getOwner());
+					if(!game.is_test && !game.is_tournament) {
+						JOptionPane.showMessageDialog(null, "Player "+c.getOwner().getID()+" is out!", "Information", JOptionPane.INFORMATION_MESSAGE);
+					}
+					if(game.getPlayerIndex()>=game.getPlayerList().size()) {
+						game.setPlayerIndex(game.getPlayerIndex()-1);
+					}
 				}
 				c.setOwner(player);
-				player.addCountry(c);
-				c.setArmy(1);
+				c.getContinent().checkIfConquered();
+				outcome+=c.getName()+",";
 			}
 		}
+		outcome+="\n";
 		game.checkWin();
 	}
 	
 	//doubles the number of armies on its countries that have neighbors that belong to other players. 
 	@Override
 	public void fortify() {
+		outcome+= "Fortification doubled army on :\n";
+
 		for(int i = 0; i < ownedCountries.size(); i++) {
 			Country c = ownedCountries.get(i);
 			if(c.hasEnemyNeighbour()) {
 				int temp = c.getArmyNum();
 				c.addArmy(temp);
+				outcome+= c.getName()+",";
 			}
-			
 		}
+		outcome+="\n";
+		game.appendOutcome(outcome);
 		game.nextPlayer();
 	}
 	

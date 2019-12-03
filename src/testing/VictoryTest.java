@@ -1,6 +1,7 @@
 package testing;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Vector;
@@ -76,7 +77,6 @@ public class VictoryTest {
 		assertEquals("S",control.processInput(command)[0]);
 		command = "attackmove 3";
 		assertEquals("S",control.processInput(command)[0]);
-		assertTrue(game.game_ended);
-		
+		assertTrue(game.game_ended);		
 	}
 }

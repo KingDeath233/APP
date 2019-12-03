@@ -47,9 +47,14 @@ public class StrategyBenevolent extends Strategy{
 		while (player.getArmyToPlace() > 0) {
 			Country curr = ownedCountries.get(ind);
 			if (curr.getArmyNum() < avg+1) {
+				System.out.println(player.getID()+" reinforce "+ownedCountries.get(ownedCountries.size() - 1).getName()+" 1 armies");
 				game.reinforceArmy(curr, 1);
 			}
 			ind = (ind+1) % ownedCountries.size();
+		}
+		//enhancement
+		for(Country c:player.getOwnCountries()) {
+			c.addArmy(1);
 		}
 		
 	}
@@ -66,7 +71,7 @@ public class StrategyBenevolent extends Strategy{
 			int curr = 0;
 			while(curr<ownedCountries.size()) {
 			HashSet<Country> visited = new HashSet<Country>();
-			visited = ownedCountries.get(curr).getLinkCountries(ownedCountries.get(0).getName(), ownedCountries.get(0).getOwner().getID(), visited);
+			visited = ownedCountries.get(curr).getLinkCountries(ownedCountries.get(0).getOwner().getID(), visited);
 			curr++;
 				Vector<Country> tmpC = new Vector<Country>();
 				for(Country c:visited) {
@@ -78,6 +83,7 @@ public class StrategyBenevolent extends Strategy{
 					continue;
 				}
 				else {
+					System.out.println("Fority from "+tmpC.get(tmpC.size()-1).getName()+" to "+tmpC.get(0).getName()+" with "+Integer.toString(tmpC.get(tmpC.size()-1).getArmyNum()-avg));
 					game.fortify(tmpC.get(tmpC.size()-1), tmpC.get(0), tmpC.get(tmpC.size()-1).getArmyNum()-avg);
 					return;
 				}

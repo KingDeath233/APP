@@ -131,6 +131,16 @@ public class Country extends Observable{
 			return false;
 		}
 		
+		public int getEnemyNeighbour() {
+			int count = 0;
+			for (Country c: this.neighbor_countries) {
+				if (!c.getOwner().getID().equals(this.owner.getID())) {
+					count++;
+				}
+			}
+			return count;
+		}
+		
 		/**
 		 * Returns the first enemy neighbor that the Country can attack
 		 * @return
@@ -167,16 +177,16 @@ public class Country extends Observable{
 		
 		/**
 		 * Depth-first recursive get all the countries which has path to the given country
-		 * @param countryID
-		 * @param ownerId
-		 * @param visited
-		 * @return
+		 * @param countryID visiting country id
+		 * @param ownerId same owner id
+		 * @param visited Hashset of visited Country strings
+		 * @return HashSet of all linked countries of the same owner  
 		 */
-		public HashSet<Country> getLinkCountries(String countryId, String ownerId, HashSet<Country>visited){
+		public HashSet<Country> getLinkCountries(String ownerId, HashSet<Country> visited){
 			visited.add(this);
 			for (Country c: this.neighbor_countries) {
 				if(visited.contains(c) || !c.getOwner().getID().equals(ownerId)) continue;
-				visited = c.getLinkCountries(countryId, ownerId, visited);
+				visited = c.getLinkCountries(ownerId, visited);
 			}
 			return visited;
 		}
